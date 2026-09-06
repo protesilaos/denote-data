@@ -1,4 +1,4 @@
-;;; denote-data.el --- PROOF OF CONCEPT FOR A DENOTE CACHE -*- lexical-binding: t -*-
+;;; denote-data.el --- Cache Denote files in the `denote-data' hashmap. -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2026  Free Software Foundation, Inc.
 
@@ -23,12 +23,16 @@
 
 ;;; Commentary:
 
-;; PROOF OF CONCEPT FOR A DENOTE CACHE.
+;; Cache Denote files in the `denote-data' hashmap.
 
 ;;; Code:
 
 (require 'denote)
 (eval-when-compile (require 'cl-lib))
+
+(defgroup denote-data nil
+  "Cache Denote files in the `denote-data' hashmap."
+  :group 'denote)
 
 ;; NOTE 2026-09-03: We can extend this as needed, such as with file
 ;; metadata, file contents, forelinks, and backlinks.  Though we need
@@ -58,6 +62,9 @@ If FILES is nil, then write all `denote-directory-files'."
     (dolist (file files)
       (denote-data-write file))))
 
+;; TODO 2026-09-04: We need a function to automatically delete stale
+;; data.  For example, if we have data about a file that has since
+;; been deleted.  Maybe there are other cases.
 (defun denote-data-get (identifier)
   "Get data about IDENTIFIER in `denote-data'."
   (gethash identifier denote-data))
@@ -67,35 +74,38 @@ If FILES is nil, then write all `denote-directory-files'."
   "Modify the SLOT with NEW-VALUE of file with IDENTIFIER in `denote-data'."
   (if-let* ((entry (denote-data-get identifier))
             (new-entry (pcase-exhaustive slot
-                         ;; ;; TODO 2026-09-03: If we are changing the
-                         ;; ;; identifier then we need to update the
-                         ;; ;; struct but also the hashmap.  I do not
-                         ;; ;; have enough experience with hashmaps,
-                         ;; ;; but I expect this to be possible.  Is
-                         ;; ;; it needed though, or should we simply
-                         ;; ;; create a new entry and perhaps delete
-                         ;; ;; the old one?
-                         ;;
-                         ;; ('identifier (setf (denote-data-entry-identifier entry) new-value))
+                         (:identifier (setf (denote-data-entry-identifier entry) new-value))
                          (:signature (setf (denote-data-entry-signature entry) new-value))
                          (:keywords (setf (denote-data-entry-keywords entry) new-value))
                          (:title (setf (denote-data-entry-title entry) new-value)))))
       (puthash identifier entry denote-data)
     (error "No entry with identifier `%s' in `denote-data'" identifier)))
 
-;; TODO 2026-09-03: Write a minor mode for users to opt in to this
+(defun denote-data-update (&optional file)
+  "Update the current Denote file or FILE entry in `denote-data'."
+  (when-let* ((file (or file buffer-file-name))
+              (denote-file-has-denoted-filename-p file)
+              (identifier (denote-retrieve-filename-identifier file))
+              (title (denote-retrieve-filename-title file))
+              (signature (denote-retrieve-filename-signature file))
+              (keywords (denote-retrieve-filename-keywords-as-list file))
+              (entry (denote-data-entry-create :identifier identifier :title title :signature signature :keywords keywords)))
+    (puthash identifier entry denote-data)))
+
+;;;###autoload
+(define-minor-mode denote-data-mode
+  "When non-nil, cache Denote data in the `denote-data' hashmap and use it."
+  :global t
+  :init-value nil
+  ;; TODO 2026-09-03: What about changes to the file happening outside
+  ;; of Emacs?
+  (if denote-data-mode
+      (add-hook 'after-save-hook #'denote-data-update)
+    (remove-hook 'after-save-hook #'denote-data-update)))
+
+;; TODO 2026-09-03: Determine what needs to be done in `denote.el' to
+;; SEAMLESSLY integrate the cache for all of its existing
 ;; functionality.
-
-;; TODO 2026-09-03: The minor mode hooks to buffer saving and all
-;; relevant Denote commands that modify the file data.
-
-;; TODO 2026-09-03: What about changes to the file happening outside
-;; of Emacs?
-
-;; TODO 2026-09-03: Once all of the above are handled, we can expect
-;; the cache to be reliable.  Determine what needs to be done in
-;; `denote.el' to SEAMLESSLY integrate the cache for all of its
-;; existing functionality.
 
 (provide 'denote-data)
 ;;; denote-data.el ends here
