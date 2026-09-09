@@ -39,7 +39,7 @@
 ;; to consider the implications of each addition.
 (cl-defstruct (denote-data-entry (:constructor denote-data-entry-create))
   "Data structure of a Denote file."
-  identifier signature title keywords)
+  identifier signature title keywords path)
 
 (defvar denote-data (make-hash-table :test #'equal)
   "List of `denote-data-entry' elements.")
@@ -51,7 +51,7 @@
          (title (denote-retrieve-filename-title file))
          (signature (denote-retrieve-filename-signature file))
          (keywords (denote-retrieve-filename-keywords-as-list file))
-         (entry (denote-data-entry-create :identifier identifier :title title :signature signature :keywords keywords)))
+         (entry (denote-data-entry-create :identifier identifier :title title :signature signature :keywords keywords :path file)))
     (puthash identifier entry denote-data)))
 
 ;;;###autoload
@@ -77,7 +77,8 @@ If FILES is nil, then write all `denote-directory-files'."
                          (:identifier (setf (denote-data-entry-identifier entry) new-value))
                          (:signature (setf (denote-data-entry-signature entry) new-value))
                          (:keywords (setf (denote-data-entry-keywords entry) new-value))
-                         (:title (setf (denote-data-entry-title entry) new-value)))))
+                         (:title (setf (denote-data-entry-title entry) new-value))
+                         (:path (setf (denote-data-entry-path entry) new-value)))))
       (puthash identifier entry denote-data)
     (error "No entry with identifier `%s' in `denote-data'" identifier)))
 
@@ -89,7 +90,7 @@ If FILES is nil, then write all `denote-directory-files'."
               (title (denote-retrieve-filename-title file))
               (signature (denote-retrieve-filename-signature file))
               (keywords (denote-retrieve-filename-keywords-as-list file))
-              (entry (denote-data-entry-create :identifier identifier :title title :signature signature :keywords keywords)))
+              (entry (denote-data-entry-create :identifier identifier :title title :signature signature :keywords keywords :path file)))
     (puthash identifier entry denote-data)))
 
 ;;;###autoload
