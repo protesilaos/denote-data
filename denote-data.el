@@ -62,6 +62,16 @@ If FILES is nil, then write all `denote-directory-files'."
     (dolist (file files)
       (denote-data-write file))))
 
+(defun denote-data-get-files ()
+  "Return list of files in `denote-data'."
+  (let ((files nil))
+    (maphash
+     (lambda (_key value)
+       (when-let* ((path (denote-data-entry-path value)))
+         (push path files)))
+     denote-data)
+    files))
+
 ;; TODO 2026-09-04: We need a function to automatically delete stale
 ;; data.  For example, if we have data about a file that has since
 ;; been deleted.  Maybe there are other cases.
