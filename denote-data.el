@@ -96,16 +96,27 @@ If FILES is nil, then write all `denote-directory-files'."
   "Get data about IDENTIFIER in `denote-data'."
   (gethash identifier denote-data))
 
-;; TODO 2026-09-03: We can implement helper functions that modify specific things, such as `denote-data-modify-title'.
+(defmacro denote-data--define-entry-set (slot)
+  "Define setter function for SLOT in `denote-data-entry'."
+  `(defun ,(intern (format "denote-data-entry-set-%s" slot)) (entry new-value)
+     ,(format "Set ENTRY %s to NEW-VALUE." slot)
+     (setf (,(intern (format "denote-data-entry-%s" slot)) entry) new-value)))
+
+(denote-data--define-entry-set identifier)
+(denote-data--define-entry-set signature)
+(denote-data--define-entry-set title)
+(denote-data--define-entry-set keywords)
+(denote-data--define-entry-set path)
+
 (defun denote-data-modify (slot new-value identifier)
   "Modify the SLOT with NEW-VALUE of file with IDENTIFIER in `denote-data'."
   (when-let* ((entry (denote-data-get identifier))
               (new-entry (pcase-exhaustive slot
-                           (:identifier (setf (denote-data-entry-identifier entry) new-value))
-                           (:signature (setf (denote-data-entry-signature entry) new-value))
-                           (:keywords (setf (denote-data-entry-keywords entry) new-value))
-                           (:title (setf (denote-data-entry-title entry) new-value))
-                           (:path (setf (denote-data-entry-path entry) new-value)))))
+                           (:identifier (denote-data-entry-set-identifier entry new-value))
+                           (:signature (denote-data-entry-set-signature entry new-value))
+                           (:keywords (denote-data-entry-set-keywords entry new-value))
+                           (:title (denote-data-entry-set-title entry new-value))
+                           (:path (denote-data-entry-set-path entry new-value)))))
     (puthash identifier entry denote-data)))
 
 (defun denote-data-update (&optional file)
