@@ -99,15 +99,14 @@ If FILES is nil, then write all `denote-directory-files'."
 ;; TODO 2026-09-03: We can implement helper functions that modify specific things, such as `denote-data-modify-title'.
 (defun denote-data-modify (slot new-value identifier)
   "Modify the SLOT with NEW-VALUE of file with IDENTIFIER in `denote-data'."
-  (if-let* ((entry (denote-data-get identifier))
-            (new-entry (pcase-exhaustive slot
-                         (:identifier (setf (denote-data-entry-identifier entry) new-value))
-                         (:signature (setf (denote-data-entry-signature entry) new-value))
-                         (:keywords (setf (denote-data-entry-keywords entry) new-value))
-                         (:title (setf (denote-data-entry-title entry) new-value))
-                         (:path (setf (denote-data-entry-path entry) new-value)))))
-      (puthash identifier entry denote-data)
-    (error "No entry with identifier `%s' in `denote-data'" identifier)))
+  (when-let* ((entry (denote-data-get identifier))
+              (new-entry (pcase-exhaustive slot
+                           (:identifier (setf (denote-data-entry-identifier entry) new-value))
+                           (:signature (setf (denote-data-entry-signature entry) new-value))
+                           (:keywords (setf (denote-data-entry-keywords entry) new-value))
+                           (:title (setf (denote-data-entry-title entry) new-value))
+                           (:path (setf (denote-data-entry-path entry) new-value)))))
+    (puthash identifier entry denote-data)))
 
 (defun denote-data-update (&optional file)
   "Update the current Denote file or FILE entry in `denote-data'."
