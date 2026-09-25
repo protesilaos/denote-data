@@ -30,9 +30,13 @@
 (require 'denote)
 (eval-when-compile (require 'cl-lib))
 
+;;;; The cache with `denote-data'
+
 (defgroup denote-data nil
   "Cache Denote files in the `denote-data' hashmap."
   :group 'denote)
+
+;;;;; Prepare the cache
 
 ;; NOTE 2026-09-03: We can extend this as needed, such as with file
 ;; metadata, file contents, forelinks, and backlinks.  Though we need
@@ -75,6 +79,8 @@ If FILES is nil, then write all `denote-directory-files'."
      denote-data)
     files))
 
+;;;;; Operate on a single `denote-data' entry
+
 ;; TODO 2026-09-04: We need a function to automatically delete stale
 ;; data.  For example, if we have data about a file that has since
 ;; been deleted.  Maybe there are other cases.
@@ -105,6 +111,8 @@ If FILES is nil, then write all `denote-directory-files'."
               (keywords (denote-retrieve-filename-keywords-as-list file))
               (entry (denote-data-entry-create :identifier identifier :title title :signature signature :keywords keywords :path file)))
     (puthash identifier entry denote-data)))
+
+;;;;; The `denote-data-mode'
 
 ;;;###autoload
 (define-minor-mode denote-data-mode
