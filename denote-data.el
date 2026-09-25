@@ -64,6 +64,8 @@ If FILES is nil, then write all `denote-directory-files'."
 
 (defun denote-data-get-files ()
   "Return list of files in `denote-data'."
+  (unless denote-data
+    (error "The cache is empty; call `denote-data-write-all' to get started"))
   (let ((files nil))
     (maphash
      (lambda (_key value)
