@@ -41,6 +41,13 @@
 ;; NOTE 2026-09-03: We can extend this as needed, such as with file
 ;; metadata, file contents, forelinks, and backlinks.  Though we need
 ;; to consider the implications of each addition.
+;;
+;; TODO 2026-09-25: If we are going to read file contents, then we
+;; cannot rely on `denote--define-retrieve-front-matter-from-content'
+;; because that defines functions which open a temp buffer for each
+;; data point.  Instead, we want to have one temp buffer and read from
+;; it the title value, the file contents, the forelinks and backlinks,
+;; and generally anything else that we can get from there.
 (cl-defstruct (denote-data-entry (:constructor denote-data-entry-create))
   "Data structure of a Denote file."
   identifier signature title keywords path)
