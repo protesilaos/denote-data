@@ -44,7 +44,7 @@
 (defvar denote-data (make-hash-table :test #'equal)
   "List of `denote-data-entry' elements.")
 
-(defun denote-data-write (file)
+(defun denote-data-write-entry (file)
   "Write data about FILE to `denote-data'."
   (when-let* ((identifier (denote-retrieve-filename-identifier file)))
     (let* ((title (denote-retrieve-filename-title file))
@@ -59,7 +59,7 @@
 If FILES is nil, then write all `denote-directory-files'."
   (when-let* ((files (or files (denote--directory-get-files))))
     (dolist (file files)
-      (denote-data-write file))))
+      (denote-data-write-entry file))))
 
 ;; NOTE 2026-09-25: The idea with this function is to plug it in to
 ;; the `denote-directory-files'.  That function would read from this
