@@ -58,7 +58,7 @@
 (defun denote-data-write-all (&optional files)
   "Write all FILES to `denote-data'.
 If FILES is nil, then write all `denote-directory-files'."
-  (when-let* ((files (or files (denote-directory-files))))
+  (when-let* ((files (or files (denote--directory-get-files))))
     (dolist (file files)
       (denote-data-write file))))
 
