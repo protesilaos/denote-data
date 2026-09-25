@@ -109,6 +109,8 @@ If FILES is nil, then write all `denote-directory-files'."
   :global t
   :init-value nil
   ;; TODO 2026-09-03: What about changes to the file happening outside of Emacs?
+  ;; TODO 2026-09-25: Same idea for changes happening in Dired.
+  ;; TODO 2026-09-25: What about a rename that changes the identifier?  Maybe a `before-save-hook' for that case?
   (if denote-data-mode
       (add-hook 'after-save-hook #'denote-data-update)
     (remove-hook 'after-save-hook #'denote-data-update)))
