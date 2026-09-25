@@ -48,12 +48,25 @@
 ;; data point.  Instead, we want to have one temp buffer and read from
 ;; it the title value, the file contents, the forelinks and backlinks,
 ;; and generally anything else that we can get from there.
+;;
+;; The `denote-data-write-from-contents' is a proof-of-concept.
 (cl-defstruct (denote-data-entry (:constructor denote-data-entry-create))
   "Data structure of a Denote file."
   identifier signature title keywords path)
 
 (defvar denote-data (make-hash-table :test #'equal)
   "List of `denote-data-entry' elements.")
+
+;; TODO 2026-09-25: Define SLOT-FUNCTIONS for title value, forelinks, backlinks, file contents.
+
+(defun denote-data-write-from-contents (file slot-functions)
+  "Read FILE contents and write relevant `denote-data' using SLOT-FUNCTIONS.
+Each SLOT-FUNCTIONS is called with the contents of FILE in a buffer to
+write a relevant entry to `denote-data'."
+  (with-temp-buffer
+    (insert-file-contents file)
+    (dolist (fn slot-functions)
+      (funcall fn))))
 
 (defun denote-data-write-entry (file)
   "Write data about FILE to `denote-data'."
