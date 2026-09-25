@@ -79,11 +79,19 @@ If FILES is nil, then write all `denote-directory-files'."
      denote-data)
     files))
 
+;; NOTE 2026-09-25: Here the idea is to call this after a file is
+;; deleted or moved outside the `denote-directory'.
+(defun denote-data-clear-outdated ()
+  "Remove `denote-data' entries that do not correspond to a file."
+  (maphash
+   (lambda (key value)
+     (when-let* ((path (denote-data-entry-path value))
+                 (_ (not (file-exists-p path))))
+       (remhash key denote-data)))
+   denote-data))
+
 ;;;;; Operate on a single `denote-data' entry
 
-;; TODO 2026-09-04: We need a function to automatically delete stale
-;; data.  For example, if we have data about a file that has since
-;; been deleted.  Maybe there are other cases.
 (defun denote-data-get (identifier)
   "Get data about IDENTIFIER in `denote-data'."
   (gethash identifier denote-data))
