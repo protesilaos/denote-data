@@ -46,13 +46,12 @@
 
 (defun denote-data-write (file)
   "Write data about FILE to `denote-data'."
-  (let* ((identifier (or (denote-retrieve-filename-identifier file)
-                         (error "The file `%s' does not have an IDENTIFIER" file)))
-         (title (denote-retrieve-filename-title file))
-         (signature (denote-retrieve-filename-signature file))
-         (keywords (denote-retrieve-filename-keywords-as-list file))
-         (entry (denote-data-entry-create :identifier identifier :title title :signature signature :keywords keywords :path file)))
-    (puthash identifier entry denote-data)))
+  (when-let* ((identifier (denote-retrieve-filename-identifier file)))
+    (let* ((title (denote-retrieve-filename-title file))
+           (signature (denote-retrieve-filename-signature file))
+           (keywords (denote-retrieve-filename-keywords-as-list file))
+           (entry (denote-data-entry-create :identifier identifier :title title :signature signature :keywords keywords :path file)))
+      (puthash identifier entry denote-data))))
 
 ;;;###autoload
 (defun denote-data-write-all (&optional files)
