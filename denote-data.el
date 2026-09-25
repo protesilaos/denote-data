@@ -108,8 +108,7 @@ If FILES is nil, then write all `denote-directory-files'."
   "When non-nil, cache Denote data in the `denote-data' hashmap and use it."
   :global t
   :init-value nil
-  ;; TODO 2026-09-03: What about changes to the file happening outside
-  ;; of Emacs?
+  ;; TODO 2026-09-03: What about changes to the file happening outside of Emacs?
   (if denote-data-mode
       (add-hook 'after-save-hook #'denote-data-update)
     (remove-hook 'after-save-hook #'denote-data-update)))
