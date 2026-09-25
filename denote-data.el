@@ -62,10 +62,12 @@ If FILES is nil, then write all `denote-directory-files'."
     (dolist (file files)
       (denote-data-write file))))
 
+;; NOTE 2026-09-25: The idea with this function is to plug it in to
+;; the `denote-directory-files'.  That function would read from this
+;; one given some reasonable condition, such as if `denote-data-mode'
+;; is non-nil.
 (defun denote-data-get-files ()
   "Return list of files in `denote-data'."
-  (unless denote-data
-    (error "The cache is empty; call `denote-data-write-all' to get started"))
   (let ((files nil))
     (maphash
      (lambda (_key value)
