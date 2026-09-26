@@ -36,37 +36,106 @@
   "Cache Denote files in the `denote-data' hashmap."
   :group 'denote)
 
+;; FIXME 2026-09-26: Can we make `denote-data-write-entry' and
+;; `denote-data-write-all' asynchronous while ensuring everything
+;; still works?  Then we can even set this to non-nil by default.
+;;
+;; TODO 2026-09-26: A :set function here is contingent on the above,
+;; otherwise it can cause trouble.  Plus, we want to guard against
+;; multiple processes, so a `use-package' with a :custom followed by a
+;; call to `denote-data-write-all' do not do extra work.
+(defcustom denote-data-read-contents nil
+  "When non-nil, read file contents for `denote-data'.
+Reading file contents means that `denote-data' will include non-nil
+slots for forelinks, backlinks, the exact file title, and the entire
+text of the file.
+
+When nil, `denote-data' only includes what the Denote file name
+provides, namely, identifier, signature, title, keywords, and file path.
+
+NOTE setting this user option to a non-nil value will making the initial
+indexing of all files considerably slower.  Here is a sample with 300
+moderately sized files (~1000 words on average), showing total elapsed
+time in seconds, number of garbage collections, and time spent on
+garbage collection:
+
+    (let ((denote-data-read-contents nil))
+      (benchmark-run 5 (denote-data-write-all nil :force-update)))
+    ;; => (0.16273555299999998 3 0.08853280699997867)
+
+    (let ((denote-data-read-contents t))
+      (benchmark-run 5 (denote-data-write-all nil :force-update)))
+    ;; => (127.905639756 2226 63.73085589600001)"
+  :type 'boolean
+  :group 'denote-data)
+
 ;;;;; Prepare the cache
 
-;; NOTE 2026-09-03: We can extend this as needed, such as with file
-;; metadata, file contents, forelinks, and backlinks.  Though we need
-;; to consider the implications of each addition.
-;;
-;; TODO 2026-09-25: If we are going to read file contents, then we
-;; cannot rely on `denote--define-retrieve-front-matter-from-content'
-;; because that defines functions which open a temp buffer for each
-;; data point.  Instead, we want to have one temp buffer and read from
-;; it the title value, the file contents, the forelinks and backlinks,
-;; and generally anything else that we can get from there.
-;;
-;; The `denote-data-write-from-contents' is a proof-of-concept.
 (cl-defstruct (denote-data-entry (:constructor denote-data-entry-create))
   "Data structure of a Denote file."
-  identifier signature title keywords path)
+  ;; From file name
+  identifier signature title keywords path
+  ;; From file contents
+  forelinks backlinks text)
 
 (defvar denote-data (make-hash-table :test #'equal)
   "List of `denote-data-entry' elements.")
 
-;; TODO 2026-09-25: Define SLOT-FUNCTIONS for title value, forelinks, backlinks, file contents.
+(defvar denote-data--content-fns
+  '((title . denote-data--get-contents-title)
+    (forelinks . denote-data--get-contents-forelinks)
+    (backlinks . denote-data--get-contents-backlinks)
+    (text . denote-data--get-contents-text))
+  "List of entries to read data from a file for `denote-data--get-contents'.
+Each element is a cons cell of the form (SYMBOL . FUNCTION), where
+SYMBOL corresponds to a slot in `denote-data-entry' and thus describes
+what FUNCTION is about.")
 
-(defun denote-data-write-from-contents (file slot-functions)
-  "Read FILE contents and write relevant `denote-data' using SLOT-FUNCTIONS.
-Each SLOT-FUNCTIONS is called with the contents of FILE in a buffer to
-write a relevant entry to `denote-data'."
-  (with-temp-buffer
-    (insert-file-contents file)
-    (dolist (fn slot-functions)
-      (funcall fn))))
+(defun denote-data--get-contents-title (file-readable-p _identifer file-type)
+  "Return title of FILE-TYPE for `denote-data--get-contents'.
+Do it when FILE-READABLE-P."
+  (when file-readable-p
+    (goto-char (point-min))
+    (when-let* ((regexp (denote--title-key-regexp file-type))
+                (value-fn (denote--title-value-reverse-function file-type))
+                (_ (re-search-forward regexp nil t 1)))
+      (funcall value-fn (buffer-substring-no-properties (point) (line-end-position))))))
+
+(defun denote-data--get-contents-forelinks (file-readable-p _identifier file-type)
+  "Return denote: links of FILE-TYPE for `denote-data--get-contents'.
+Do it when FILE-READABLE-P."
+  (when file-readable-p
+    (goto-char (point-min))
+    (let ((forelinks nil))
+      (when-let* ((regexp (denote--link-in-context-regexp file-type)))
+        (while (re-search-forward regexp nil t)
+          (push (match-string 1) forelinks))
+        (seq-uniq forelinks)))))
+
+(defun denote-data--get-contents-backlinks (_file identifier _file-type)
+  "Return backlinks for file with IDENTIFIER for `denote-data--get-contents'."
+  (when-let* ((xrefs (denote-retrieve-xref-alist-for-backlinks identifier)))
+    (mapcar #'car xrefs)))
+
+(defun denote-data--get-contents-text (file-readable-p _identifier _file-type)
+  "Return `buffer-string' for `denote-data--get-contents'.
+Do it when FILE-READABLE-P."
+  (when file-readable-p
+    (buffer-string)))
+
+(defun denote-data--get-contents (file)
+  "Read FILE contents and return relevant `denote-data'.
+Do so by using the `denote-data--content-fns'."
+  (let ((file-readable-p (file-readable-p file))
+        (identifier (denote-retrieve-filename-identifier file))
+        (file-type (denote-filetype-heuristics file))
+        (data nil))
+    (with-temp-buffer
+      (insert-file-contents file)
+      (pcase-dolist (`(,slot . ,fn) denote-data--content-fns)
+        (when-let* ((return (funcall fn file-readable-p identifier file-type)))
+          (push (cons slot return) data))))
+    data))
 
 (defun denote-data-write-entry (file)
   "Write data about FILE to `denote-data'."
@@ -74,16 +143,46 @@ write a relevant entry to `denote-data'."
     (let* ((title (denote-retrieve-filename-title file))
            (signature (denote-retrieve-filename-signature file))
            (keywords (denote-retrieve-filename-keywords-as-list file))
-           (entry (denote-data-entry-create :identifier identifier :title title :signature signature :keywords keywords :path file)))
+           (slots (if-let* ((_ denote-data-read-contents)
+                            (data (denote-data--get-contents file)))
+                      (let ((contents-title (alist-get 'title data))
+                            (forelinks (alist-get 'forelinks data))
+                            (backlinks (alist-get 'backlinks data))
+                            (text (alist-get 'text data)))
+                        (list :identifier identifier
+                              :title (or contents-title title)
+                              :signature signature
+                              :keywords keywords
+                              :path file
+                              :forelinks forelinks
+                              :backlinks backlinks
+                              :text text))
+                    (list :identifier identifier
+                          :title title
+                          :signature signature
+                          :keywords keywords
+                          :path file)))
+           (entry (apply 'denote-data-entry-create slots)))
       (puthash identifier entry denote-data))))
 
+(defvar denote-data--write-all-called-p nil
+  "Non-nil if `denote-data-write-all' has been called.")
+
 ;;;###autoload
-(defun denote-data-write-all (&optional files)
+(defun denote-data-write-all (&optional files force)
   "Write all FILES to `denote-data'.
-If FILES is nil, then write all `denote-directory-files'."
-  (when-let* ((files (or files (denote--directory-get-files))))
-    (dolist (file files)
-      (denote-data-write-entry file))))
+If FILES is nil, then write all `denote-directory-files'.
+
+With optional FORCE build up the cache again even if this function was
+already called."
+  (if-let* ((_ (or force (null denote-data--write-all-called-p)))
+            (files (or files (denote--directory-get-files))))
+      (progn
+        (dolist (file files)
+          (denote-data-write-entry file))
+        (setq denote-data--write-all-called-p t)
+        (message "Created `denote-data' for `%d' files" (length files)))
+    (message "Data already exists; call `denote-data-write-all' with FORCE if needed")))
 
 ;; NOTE 2026-09-25: The idea with this function is to plug it in to
 ;; the `denote-directory-files'.  That function would read from this
@@ -127,6 +226,9 @@ If FILES is nil, then write all `denote-directory-files'."
 (denote-data--define-entry-set title)
 (denote-data--define-entry-set keywords)
 (denote-data--define-entry-set path)
+(denote-data--define-entry-set forelinks)
+(denote-data--define-entry-set backlinks)
+(denote-data--define-entry-set text)
 
 (defun denote-data-modify (slot new-value identifier)
   "Modify the SLOT with NEW-VALUE of file with IDENTIFIER in `denote-data'."
@@ -136,7 +238,10 @@ If FILES is nil, then write all `denote-directory-files'."
                            (:signature (denote-data-entry-set-signature entry new-value))
                            (:keywords (denote-data-entry-set-keywords entry new-value))
                            (:title (denote-data-entry-set-title entry new-value))
-                           (:path (denote-data-entry-set-path entry new-value)))))
+                           (:path (denote-data-entry-set-path entry new-value))
+                           (:forelinks (denote-data-entry-set-forelinks entry new-value))
+                           (:backlinks (denote-data-entry-set-backlinks entry new-value))
+                           (:text (denote-data-entry-set-text entry new-value)))))
     (puthash identifier entry denote-data)))
 
 (defun denote-data-update (&optional file)
@@ -154,14 +259,18 @@ If FILES is nil, then write all `denote-directory-files'."
 
 ;;;###autoload
 (define-minor-mode denote-data-mode
-  "When non-nil, cache Denote data in the `denote-data' hashmap and use it."
+  "When non-nil, cache Denote data in the `denote-data' hashmap and use it.
+Activating this mode also calls `denote-data-write-all'."
   :global t
   :init-value nil
   ;; TODO 2026-09-03: What about changes to the file happening outside of Emacs?
   ;; TODO 2026-09-25: Same idea for changes happening in Dired.
   ;; TODO 2026-09-25: What about a rename that changes the identifier?  Maybe a `before-save-hook' for that case?
   (if denote-data-mode
-      (add-hook 'after-save-hook #'denote-data-update)
+      (progn
+        (denote-data-write-all)
+        (add-hook 'after-save-hook #'denote-data-update))
+    (setq denote-data--write-all-called-p nil)
     (remove-hook 'after-save-hook #'denote-data-update)))
 
 ;; TODO 2026-09-03: Determine what needs to be done in `denote.el' to
