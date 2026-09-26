@@ -23,7 +23,9 @@
 
 ;;; Commentary:
 
-;; Cache Denote files in the `denote-data' hashmap.
+;; Cache Denote files in the `denote-data' hashmap.  This is an
+;; experiment.  I want to flesh it out before deciding if it can be
+;; part of denote.el
 
 ;;; Code:
 
