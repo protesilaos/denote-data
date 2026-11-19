@@ -216,8 +216,7 @@ Use this as part of `after-save-hook' or related.  Otherwise use
   "Add file to `denote-data'.
 IDENTIFIER, SIGNATURE, TITLE, KEYWORDS, NOTE-PATH are those documented
 in `denote-new-note-functions'."
-  (let* ((buffer (get-file-buffer note-path))
-         (data (denote-data--get-contents note-path))
+  (let* ((data (denote-data--get-contents note-path))
          (links (alist-get 'links data))
          (slots (list :identifier identifier
                       :title title
