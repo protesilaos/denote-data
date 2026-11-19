@@ -34,6 +34,18 @@
   "In-memory cache for Denote."
   :group 'denote)
 
+(defcustom denote-data-asynchronous-build-variables-extra nil
+  "List of variables to consider in the asynchronous build of `denote-data'.
+The value is a list of symbols, each of which is related to the
+configuration of Denote, like `denote-data-asynchronous-build-variables-core'.
+
+Users that want to affect what `denote-data' accounts for should add to
+this variable's value before `denote-data' is created or updated, such
+as before `denote-data-mode' is enabled or `denote-data-write-all' is
+called."
+  :type '(repeat variable)
+  :package-version '(denote-data . "0.1.0"))
+
 ;;;; The cache with `denote-data'
 
 ;; TODO 2026-10-12: Maybe we can leverage the `file-attribute-modification-time'
@@ -320,18 +332,6 @@ Filter Functions'."
      denote-file-name-slug-functions)
   "List of variables to consider in the asynchronous build of `denote-data'.
 These are combined with `denote-data-asynchronous-build-variables-extra'.")
-
-(defcustom denote-data-asynchronous-build-variables-extra nil
-  "List of variables to consider in the asynchronous build of `denote-data'.
-The value is a list of symbols, each of which is related to the
-configuration of Denote, like `denote-data-asynchronous-build-variables-core'.
-
-Users that want to affect what `denote-data' accounts for should add to
-this variable's value before `denote-data' is created or updated, such
-as before `denote-data-mode' is enabled or `denote-data-write-all' is
-called."
-  :type '(repeat variable)
-  :package-version '(denote-data . "0.1.0"))
 
 (defun denote-data--get-user-configuration ()
   "Return user configuration for `denote-data--write-all-asynchronous'."
