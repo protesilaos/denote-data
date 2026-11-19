@@ -1,4 +1,4 @@
-;;; denote-data.el --- Cache Denote files in the `denote-data' hash-table -*- lexical-binding: t -*-
+;;; denote-data.el --- In-memory cache for Denote -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2026  Free Software Foundation, Inc.
 
@@ -23,7 +23,7 @@
 
 ;;; Commentary:
 
-;; Cache Denote files in the `denote-data' hash-table.
+;; In-memory cache for Denote.
 
 ;;; Code:
 
@@ -31,7 +31,7 @@
 (eval-when-compile (require 'cl-lib))
 
 (defgroup denote-data nil
-  "The `denote-data' cache."
+  "In-memory cache for Denote."
   :group 'denote)
 
 ;;;; The cache with `denote-data'
