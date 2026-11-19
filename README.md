@@ -8,4 +8,4 @@ for `completion-at-point-functions`, and more.
 
 + Package name (GNU ELPA): `denote-data` (⚠️ Coming soon!)
 + Git repository: <https://github.com/protesilaos/denote-data>
-+ Backronym: DENOTE ... Data Accessible Transferable Asynchronously.
++ Backronym: DENOTE ... Data Assiduously Transferred Asynchronously.
