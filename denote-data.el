@@ -82,12 +82,11 @@ Do it when FILE-SUPPORTED-P is non-nil."
           (push (match-string 1) links))
         (seq-uniq links)))))
 
-(defun denote-data--get-contents (file file-contents)
+(defun denote-data--get-contents (file)
   "Read FILE contents and return relevant `denote-data'.
-Do not read FILE contents if FILE has `denote-encryption-file-extensions'.
-
-With optional FILE-CONTENTS, use those outright instead of reading from
-FILE.
+Do not read FILE contents if FILE has
+`denote-encryption-file-extensions' or does not conform with
+`denote-file-is-writable-and-supported-p'.
 
 Do so by using the `denote-data--content-fns'."
   (let ((file-supported-p (denote-file-is-writable-and-supported-p file))
@@ -96,8 +95,6 @@ Do so by using the `denote-data--content-fns'."
          (data nil))
     (with-temp-buffer
       (cond
-       (file-contents
-        (insert file-contents))
        ;; NOTE 2026-10-21: Maybe we need a more general approach to
        ;; how we `insert-file-contents' when dealing with encrypted
        ;; files, but this is the only case I am aware of right now
@@ -106,7 +103,7 @@ Do so by using the `denote-data--content-fns'."
                     (_ (member extension denote-encryption-file-extensions)))
           (setq file-supported-p nil)
           t))
-       (t
+       (file-supported-p
         (insert-file-contents file)))
       (pcase-dolist (`(,slot . ,fn) denote-data--content-fns)
         (when-let* ((return (funcall fn file-supported-p identifier file-type)))
@@ -120,7 +117,7 @@ Do so by using the `denote-data--content-fns'."
     (let* ((title (denote-retrieve-filename-title file))
            (signature (denote-retrieve-filename-signature file))
            (keywords (denote-retrieve-filename-keywords file))
-           (data (denote-data--get-contents file nil))
+           (data (denote-data--get-contents file))
            (contents-title (alist-get 'title data))
            (links (alist-get 'links data))
            (slots (list :identifier identifier
@@ -220,9 +217,7 @@ Use this as part of `after-save-hook' or related.  Otherwise use
 IDENTIFIER, SIGNATURE, TITLE, KEYWORDS, NOTE-PATH are those documented
 in `denote-new-note-functions'."
   (let* ((buffer (get-file-buffer note-path))
-         (buffer-contents (with-current-buffer buffer
-                            (buffer-string)))
-         (data (denote-data--get-contents note-path buffer-contents))
+         (data (denote-data--get-contents note-path))
          (links (alist-get 'links data))
          (slots (list :identifier identifier
                       :title title
@@ -245,7 +240,7 @@ FILE may be a file path or the identifier."
 The arguments OLD-IDENTIFIER, IDENTIFIER, TITLE, KEYWORDS, SIGNATURE,
 NEW-NAME have the meaning of that hook."
   (remhash old-identifier denote-data)
-  (let* ((data (denote-data--get-contents new-name nil))
+  (let* ((data (denote-data--get-contents new-name))
          (links (alist-get 'links data))
          (slots (list :identifier identifier
                       :title title
