@@ -313,23 +313,25 @@ Filter Functions'."
       (erase-buffer))
     buffer))
 
-;; TODO 2026-10-15: Double-check that the configuration here is
-;; exhaustive.  We want to capture EVERYTHING.  Specifically, we might
-;; need to think about options to extend this, such as
-;; `denote-journal-directory', and so on.  Maybe the best approach is
-;; to have some kind of arrangement whereby packages/users add
-;; arbitrary things for us to include in the cache's configuration.
-;; This could be as simple as adding an OPTIONS parameter which is an
-;; alist of cons cells of the form (USER-OPTION . VALUE) and then we
-;; take care to run the formatting here.  That would have to be called
-;; before `denote-data-mode' or the cache would need to be rebuilt
-;; accordingly.
-(defvar denote-data-asynchronous-build-variables
+(defvar denote-data-asynchronous-build-variables-core
   '( denote-directory denote-file-type denote-file-types
      denote-file-name-components-order denote-excluded-directories-regexp
      denote-keywords-to-not-infer-regexp denote-excluded-files-regexp
      denote-file-name-slug-functions)
-  "List of variables to consider in the asynchronous build of `denote-data'.")
+  "List of variables to consider in the asynchronous build of `denote-data'.
+These are combined with `denote-data-asynchronous-build-variables-extra'.")
+
+(defcustom denote-data-asynchronous-build-variables-extra nil
+  "List of variables to consider in the asynchronous build of `denote-data'.
+The value is a list of symbols, each of which is related to the
+configuration of Denote, like `denote-data-asynchronous-build-variables-core'.
+
+Users that want to affect what `denote-data' accounts for should add to
+this variable's value before `denote-data' is created or updated, such
+as before `denote-data-mode' is enabled or `denote-data-write-all' is
+called."
+  :type '(repeat variable)
+  :package-version '(denote-data . "0.1.0"))
 
 (defun denote-data--get-user-configuration ()
   "Return user configuration for `denote-data--write-all-asynchronous'."
@@ -345,7 +347,8 @@ Filter Functions'."
                                     "'"
                                   "")
                                 value))))
-         (variables (mapconcat format-fn denote-data-asynchronous-build-variables "")))
+         (all-variables (append denote-data-asynchronous-build-variables-core denote-data-asynchronous-build-variables-extra))
+         (variables (mapconcat format-fn all-variables "")))
     (format "(setq\n%s)" variables)))
 
 (defun denote-data--write-all-asynchronous (&optional force)
