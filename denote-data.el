@@ -319,9 +319,6 @@ Filter Functions'."
       (erase-buffer))
     buffer))
 
-;; TODO 2026-10-15: Maybe tweak the formatting here, but the point is
-;; that it works.
-;;
 ;; TODO 2026-10-15: Double-check that the configuration here is
 ;; exhaustive.  We want to capture EVERYTHING.  Specifically, we might
 ;; need to think about options to extend this, such as
@@ -333,28 +330,29 @@ Filter Functions'."
 ;; take care to run the formatting here.  That would have to be called
 ;; before `denote-data-mode' or the cache would need to be rebuilt
 ;; accordingly.
+(defvar denote-data-asynchronous-build-variables
+  '( denote-directory denote-file-type denote-file-types
+     denote-file-name-components-order denote-excluded-directories-regexp
+     denote-keywords-to-not-infer-regexp denote-excluded-files-regexp
+     denote-file-name-slug-functions)
+  "List of variables to consider in the asynchronous build of `denote-data'.")
+
 (defun denote-data--get-user-configuration ()
   "Return user configuration for `denote-data--write-all-asynchronous'."
-  (let ((format-fn (lambda (symbol)
-                     (let ((value (symbol-value symbol)))
-                       (format "%s %s%S\n"
-                               symbol
-                               (if (and value
-                                        (or (listp value)
-                                            (symbolp value)))
-                                   "'"
-                                 "")
-                               value)))))
-    (concat "(setq "
-            (funcall format-fn 'denote-directory)
-            (funcall format-fn 'denote-file-name-components-order)
-            (funcall format-fn 'denote-file-type)
-            (funcall format-fn 'denote-file-types)
-            (funcall format-fn 'denote-excluded-directories-regexp)
-            (funcall format-fn 'denote-keywords-to-not-infer-regexp)
-            (funcall format-fn 'denote-excluded-files-regexp)
-            (funcall format-fn 'denote-file-name-slug-functions)
-            ")")))
+  (let* ((format-fn (lambda (symbol)
+                      ;; TODO 2026-10-15: Maybe tweak the formatting
+                      ;; here, but the point is that it works.
+                      (let ((value (symbol-value symbol)))
+                        (format "%s %s%S\n"
+                                symbol
+                                (if (and value
+                                         (or (listp value)
+                                             (symbolp value)))
+                                    "'"
+                                  "")
+                                value))))
+         (variables (mapconcat format-fn denote-data-asynchronous-build-variables "")))
+    (format "(setq\n%s)" variables)))
 
 (defun denote-data--write-all-asynchronous (&optional force)
   "Call `denote-data-write-all' in a separate process.
