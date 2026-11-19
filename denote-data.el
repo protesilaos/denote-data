@@ -406,11 +406,12 @@ Respect `denote-keywords-to-not-infer-regexp' and do not remove any duplicates."
     (maphash
      (lambda (_key value)
        (when-let* ((path (denote-data-entry-path value))
+                   (relative-path (denote--get-file-name-relative-to-directories path (denote-directories)))
                    (file-keywords (denote-data-entry-keywords value))
                    (file-keywords-list (split-string file-keywords "_" :omit-nulls))
                    (final-keywords (denote--infer-keywords-from-files-filter file-keywords-list)))
          (if files-matching-regexp
-             (when (string-match-p files-matching-regexp path)
+             (when (string-match-p files-matching-regexp relative-path)
                (push final-keywords keywords))
            (push final-keywords keywords))))
      denote-data)
