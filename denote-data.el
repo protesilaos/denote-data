@@ -349,6 +349,7 @@ Filter Functions'."
             (funcall format-fn 'denote-directory)
             (funcall format-fn 'denote-file-name-components-order)
             (funcall format-fn 'denote-file-type)
+            (funcall format-fn 'denote-file-types)
             (funcall format-fn 'denote-excluded-directories-regexp)
             (funcall format-fn 'denote-keywords-to-not-infer-regexp)
             (funcall format-fn 'denote-excluded-files-regexp)
