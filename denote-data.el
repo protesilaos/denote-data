@@ -91,7 +91,7 @@ Do it when FILE-SUPPORTED-P is non-nil."
     (let ((links nil))
       (when-let* ((regexp (denote--link-in-context-regexp file-type)))
         (while (re-search-forward regexp nil t)
-          (push (match-string 1) links))
+          (push (match-string-no-properties 1) links))
         (seq-uniq links)))))
 
 (defun denote-data--get-contents (file)
