@@ -371,16 +371,18 @@ before."
   (when (or force (null denote-data--write-all-called-p))
     (let* ((buffer-output (denote-data--write-all-asynchronous-get-buffer " *denote-data*"))
            (buffer-error (denote-data--write-all-asynchronous-get-buffer " *denote-data-error*"))
-           (denote-source-file (or (locate-library "denote-data")
+           (denote-source-file (or (locate-library "denote")
                                    (error "File denote.el is not in the `load-path'")))
+           (denote-data-source-file (or (locate-library "denote-data")
+                                        (error "File denote-data.el is not in the `load-path'")))
            (progress-pipe (make-pipe-process
                            :name "denote-data-progress-pipe"
                            :buffer buffer-error
                            :filter #'denote-data--write-all-asynchronous-progress-pipe-filter))
            (emacs-binary (expand-file-name invocation-name invocation-directory))
            (user-options (denote-data--get-user-configuration))
-           (command (list emacs-binary "--batch" "-Q" "-l" denote-source-file "--eval"
-                          (format "(progn %s (denote-data-write-all) (prin1 denote-data))" user-options)))
+           (command (list emacs-binary "--batch" "-Q" "-l" denote-source-file "-l" denote-data-source-file
+                          "--eval" (format "(progn %s (denote-data-write-all) (prin1 denote-data))" user-options)))
            (process (make-process
                      :name "denote-data"
                      :buffer buffer-output
