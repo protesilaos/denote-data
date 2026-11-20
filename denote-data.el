@@ -305,6 +305,7 @@ NEW-NAME have the meaning of that hook."
 (defun denote-data--write-all-asynchronous-sentinel-fail ()
   "Handle case where `denote-data' failed."
   (denote-data-mode--off)
+  (setq denote-data--write-all-called-p nil)
   (message "Could not generate `denote-data' asynchronously"))
 
 (defun denote-data--write-all-asynchronous-sentinel (process event)
@@ -316,10 +317,14 @@ PROCESS and EVENT are the arguments described in Info node `(elisp) Sentinels'."
     (when-let* ((buffer-process (process-buffer process)))
       (with-current-buffer buffer-process
         (goto-char (point-min))
-        (if-let* ((data (read (current-buffer)))
-                  (_ (hash-table-p data)))
-            (denote-data--write-all-asynchronous-sentinel-done data)
-          (denote-data--write-all-asynchronous-sentinel-fail)))))
+        (let ((data (read (current-buffer))))
+          (cond
+           ((not (hash-table-p data))
+            (denote-data--write-all-asynchronous-sentinel-fail)
+            (message "Could not get hash-table"))
+           ((and (hash-table-p data)
+                 (> (hash-table-count data) 0))
+            (denote-data--write-all-asynchronous-sentinel-done data)))))))
    ((string-match-p "\\(exited abnormally\\|failed with code\\)" event)
     (denote-data--write-all-asynchronous-sentinel-fail))))
 
