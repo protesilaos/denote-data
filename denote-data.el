@@ -60,6 +60,12 @@ called."
   (path nil :documentation "The file PATH." :type string)
   (links nil :documentation "The LINKS as a list of identifiers (strings)." :type list))
 
+;; TODO 2026-11-20: I already have a TODO about how to handle
+;; `denote-directory' silos, as noted in the context of
+;; `denote-data-write-all'.  Perhaps we can set `denote-data' to a
+;; value of (cons (denote-directories) HASH-TABLE) such that each silo
+;; is idenfied uniquely and its hash-table is then prepared/retrieved
+;; accordingly.
 (defvar denote-data (make-hash-table :test #'equal)
   "The hash-table of `denote-data-entry' elements.")
 
