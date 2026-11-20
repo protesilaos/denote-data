@@ -122,9 +122,14 @@ Do so by using the `denote-data--content-fns'."
           (push (cons slot return) data))))
     data))
 
+(defun denote-data--for-cache-p (file)
+  "Return non-nil if FILE should be cached."
+  (and (denote-file-has-denoted-filename-p file)
+       (denote-file-is-in-denote-directory-p file)))
+
 (defun denote-data-write-entry (file)
   "Write data about FILE to `denote-data'."
-  (when-let* ((_ (file-exists-p file))
+  (when-let* ((_ (denote-data--for-cache-p file))
               (identifier (denote-retrieve-filename-identifier file)))
     (let* ((title (denote-retrieve-filename-title file))
            (signature (denote-retrieve-filename-signature file))
@@ -216,11 +221,6 @@ already called."
       (:title (denote-data-entry-set-title entry new-value))
       (:path (denote-data-entry-set-path entry new-value))
       (:links (denote-data-entry-set-links entry new-value)))))
-
-(defun denote-data--for-cache-p (file)
-  "Return non-nil if FILE should be cached."
-  (and (denote-file-has-denoted-filename-p file)
-       (denote-file-is-in-denote-directory-p file)))
 
 (defun denote-data-update ()
   "Update the current Denote file entry in `denote-data'.
@@ -443,7 +443,7 @@ Respect `denote-keywords-to-not-infer-regexp' and do not remove any duplicates."
 ;; instead.
 (defun denote-data--resolve-file-identifier (arg)
   "Return ARG identifier if it is a file, else return ARG."
-  (if (file-exists-p (expand-file-name arg))
+  (if (denote-data--for-cache-p (expand-file-name arg))
       (denote-retrieve-filename-identifier arg)
     arg))
 
