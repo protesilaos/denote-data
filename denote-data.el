@@ -217,28 +217,33 @@ already called."
       (:path (denote-data-entry-set-path entry new-value))
       (:links (denote-data-entry-set-links entry new-value)))))
 
+(defun denote-data--for-cache-p (file)
+  "Return non-nil if FILE should be cached."
+  (and (denote-file-has-denoted-filename-p file)
+       (denote-file-is-in-denote-directory-p file)))
+
 (defun denote-data-update ()
   "Update the current Denote file entry in `denote-data'.
 Use this as part of `after-save-hook' or related.  Otherwise use
 `denote-data-write-entry'."
-  (when (and (denote-file-has-denoted-filename-p buffer-file-name)
-             (denote-file-is-in-denote-directory-p buffer-file-name))
+  (when (denote-data--for-cache-p buffer-file-name)
     (denote-data-write-entry buffer-file-name)))
 
 (defun denote-data-add-file (identifier signature title keywords note-path)
   "Add file to `denote-data'.
 IDENTIFIER, SIGNATURE, TITLE, KEYWORDS, NOTE-PATH are those documented
 in `denote-new-note-functions'."
-  (let* ((data (denote-data--get-contents note-path))
-         (links (alist-get 'links data))
-         (slots (list :identifier identifier
-                      :title title
-                      :signature signature
-                      :keywords (denote-keywords-combine keywords)
-                      :path note-path
-                      :links links))
-         (entry (apply 'denote-data-entry-create slots)))
-    (puthash identifier entry denote-data)))
+  (when (denote-data--for-cache-p note-path)
+    (let* ((data (denote-data--get-contents note-path))
+           (links (alist-get 'links data))
+           (slots (list :identifier identifier
+                        :title title
+                        :signature signature
+                        :keywords (denote-keywords-combine keywords)
+                        :path note-path
+                        :links links))
+           (entry (apply 'denote-data-entry-create slots)))
+      (puthash identifier entry denote-data))))
 
 (defun denote-data-remove-file (file)
   "Remove FILE from `denote-data'.
@@ -251,17 +256,18 @@ FILE may be a file path or the identifier."
   "Function to add to `denote-after-rename-functions'.
 The arguments OLD-IDENTIFIER, IDENTIFIER, TITLE, KEYWORDS, SIGNATURE,
 NEW-NAME have the meaning of that hook."
-  (remhash old-identifier denote-data)
-  (let* ((data (denote-data--get-contents new-name))
-         (links (alist-get 'links data))
-         (slots (list :identifier identifier
-                      :title title
-                      :signature signature
-                      :keywords (denote-keywords-combine keywords)
-                      :path new-name
-                      :links links))
-         (entry (apply 'denote-data-entry-create slots)))
-    (puthash identifier entry denote-data)))
+  (when (denote-data--for-cache-p new-name)
+    (remhash old-identifier denote-data)
+    (let* ((data (denote-data--get-contents new-name))
+           (links (alist-get 'links data))
+           (slots (list :identifier identifier
+                        :title title
+                        :signature signature
+                        :keywords (denote-keywords-combine keywords)
+                        :path new-name
+                        :links links))
+           (entry (apply 'denote-data-entry-create slots)))
+      (puthash identifier entry denote-data))))
 
 ;;;;; The asynchronous call to build the `denote-data'
 
