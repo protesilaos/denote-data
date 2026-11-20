@@ -300,7 +300,7 @@ NEW-NAME have the meaning of that hook."
   (when denote-data-mode
     (denote-data-mode--disable)
     (denote-data-mode -1))
-  (error "Could not generate `denote-data' asynchronously"))
+  (message "Could not generate `denote-data' asynchronously"))
 
 (defun denote-data--write-all-asynchronous-sentinel (process event)
   "Process sentinel for `denote-data--write-all-asynchronous'.
