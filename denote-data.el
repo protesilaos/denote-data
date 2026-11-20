@@ -196,7 +196,7 @@ already called."
               (setq denote-data--write-all-called-p t)
               (progress-reporter-done reporter))
           (denote-data-mode--off)
-          (message "No files; nothing to add to `denote-data'"))
+          (message "No files; nothing to add to `denote-data'")))
     (message "Data already exists; call `denote-data-write-all' with FORCE if needed")))
 
 ;;;;; Operate on a single `denote-data' entry
