@@ -181,21 +181,21 @@ that satisfy `denote-file-has-denoted-filename-p'.
 
 With optional FORCE build up the cache again even if this function was
 already called."
-  (when force
-    (denote-data-clear))
-  (if-let* ((_ (or force (null denote-data--write-all-called-p))))
-      (if-let* ((files (or files (denote--directory-get-files)))
-                (total (length files))
-                (reporter (make-progress-reporter "`denote-data' processing files..." 0 total 0 1 1.5))
-                (index 1))
-          (progn
-            (dolist (file files)
-              (progress-reporter-update reporter index)
-              (setq index (+ index 1))
-              (denote-data-write-entry file))
-            (setq denote-data--write-all-called-p t)
-            (progress-reporter-done reporter))
-        (message "No files; nothing to add to `denote-data'"))
+  (if (or force (null denote-data--write-all-called-p))
+      (progn
+        (denote-data-clear)
+        (if-let* ((files (or files (denote--directory-get-files)))
+                  (total (length files))
+                  (reporter (make-progress-reporter "`denote-data' processing files..." 0 total 0 1 1.5))
+                  (index 1))
+            (progn
+              (dolist (file files)
+                (progress-reporter-update reporter index)
+                (setq index (+ index 1))
+                (denote-data-write-entry file))
+              (setq denote-data--write-all-called-p t)
+              (progress-reporter-done reporter))
+          (message "No files; nothing to add to `denote-data'")))
     (message "Data already exists; call `denote-data-write-all' with FORCE if needed")))
 
 ;;;;; Operate on a single `denote-data' entry
