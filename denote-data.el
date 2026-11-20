@@ -195,7 +195,8 @@ already called."
                 (denote-data-write-entry file))
               (setq denote-data--write-all-called-p t)
               (progress-reporter-done reporter))
-          (message "No files; nothing to add to `denote-data'")))
+          (denote-data-mode--off)
+          (message "No files; nothing to add to `denote-data'"))
     (message "Data already exists; call `denote-data-write-all' with FORCE if needed")))
 
 ;;;;; Operate on a single `denote-data' entry
@@ -295,11 +296,15 @@ NEW-NAME have the meaning of that hook."
     (denote-data-mode--enable))
   (setq denote-data data))
 
-(defun denote-data--write-all-asynchronous-sentinel-fail ()
-  "Handle case where `denote-data' failed."
+(defun denote-data-mode--off ()
+  "Switch off the `denote-data-mode'."
   (when denote-data-mode
     (denote-data-mode--disable)
-    (denote-data-mode -1))
+    (denote-data-mode -1)))
+
+(defun denote-data--write-all-asynchronous-sentinel-fail ()
+  "Handle case where `denote-data' failed."
+  (denote-data-mode--off)
   (message "Could not generate `denote-data' asynchronously"))
 
 (defun denote-data--write-all-asynchronous-sentinel (process event)
