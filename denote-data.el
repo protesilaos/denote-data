@@ -221,7 +221,8 @@ already called."
   "Update the current Denote file entry in `denote-data'.
 Use this as part of `after-save-hook' or related.  Otherwise use
 `denote-data-write-entry'."
-  (when (denote-file-has-denoted-filename-p buffer-file-name)
+  (when (and (denote-file-has-denoted-filename-p buffer-file-name)
+             (denote-file-is-in-denote-directory-p buffer-file-name))
     (denote-data-write-entry buffer-file-name)))
 
 (defun denote-data-add-file (identifier signature title keywords note-path)
