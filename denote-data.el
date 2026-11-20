@@ -316,7 +316,7 @@ PROCESS and EVENT are the arguments described in Info node `(elisp) Sentinels'."
             (denote-data--write-all-asynchronous-sentinel-done data)
           (denote-data--write-all-asynchronous-sentinel-fail)))))
    ((string-match-p "\\(exited abnormally\\|failed with code\\)" event)
-    (message "FAILED to build `denote-data'; something unexpected happened"))))
+    (denote-data--write-all-asynchronous-sentinel-fail))))
 
 (defun denote-data--write-all-asynchronous-progress-pipe-filter (process string)
   "Process filter for `make-pipe-process' of `denote-data--write-all-asynchronous'.
