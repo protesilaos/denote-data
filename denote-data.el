@@ -130,8 +130,9 @@ Do so by using the `denote-data--content-fns'."
 
 (defun denote-data--for-cache-p (file)
   "Return non-nil if FILE should be cached."
-  (and (denote-file-has-denoted-filename-p file)
-       (denote-file-is-in-denote-directory-p file)))
+  (and (file-exists-p file)
+        (denote-file-has-denoted-filename-p file)
+        (denote-file-is-in-denote-directory-p file)))
 
 (defun denote-data-write-entry (file)
   "Write data about FILE to `denote-data'."
