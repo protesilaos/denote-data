@@ -108,9 +108,9 @@ Do not read FILE contents if FILE has
 
 Do so by using the `denote-data--content-fns'."
   (let ((file-supported-p (denote-file-is-writable-and-supported-p file))
-         (identifier (denote-retrieve-filename-identifier file))
-         (file-type (denote-filetype-heuristics file))
-         (data nil))
+        (identifier (denote-retrieve-filename-identifier file))
+        (file-type (denote-filetype-heuristics file))
+        (data nil))
     (with-temp-buffer
       (cond
        ;; NOTE 2026-10-21: Maybe we need a more general approach to
