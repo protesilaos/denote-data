@@ -505,6 +505,78 @@ Also see `denote-data-get-backlinks-files-only'."
     (let ((backlinks-by-file-type (denote--get-files-by-file-type backlinks)))
       (denote--make-xref-alist identifier backlinks-by-file-type))))
 
+;;;;; Support for `denote-sequence'
+
+(defvar denote-sequence-get-all-files-function)
+(defvar denote-sequence-get-path-function)
+(defvar denote-sequence-hierarchy-get-title-function)
+
+(declare-function denote-sequence-p "denote-sequence" (sequence))
+
+(defun denote-data-sequence-get-all-files (&optional files as-sequence-path-pairs)
+  "Return all `denote-data' file paths with a sequence per `denote-sequence-p'.
+With optional FILES consider only those.  With optional
+AS-SEQUENCE-PATH-PAIRS return a list of cons cells in the form
+of (SEQUENCE . PATH)."
+  (let ((pairs nil))
+    (if files
+        (dolist (file files)
+          (when-let* ((signature (denote-data-get-signature file))
+                      (sequence (denote-sequence-p signature)))
+            (push (cons sequence file) pairs)))
+      (maphash
+       (lambda (_key value)
+         (when-let* ((path (denote-data-entry-path value))
+                     (signature (denote-data-entry-signature value))
+                     (sequence (denote-sequence-p signature)))
+           (push (cons sequence path) pairs)))
+       denote-data))
+    (if as-sequence-path-pairs
+        pairs
+      (mapcar #'cdr pairs))))
+
+(defun denote-data-sequence-get-path (sequence &optional files)
+  "Return SEQUENCE file path from `denote-data'.
+With optional FILES consider only those."
+  (when-let* ((pairs (denote-data-sequence-get-all-files files :as-sequence-path-pairs))
+              (pair (assoc sequence pairs)))
+    (cdr pair)))
+
+(defun denote-data-sequence-get-title (file &rest _)
+  "Return FILE title and ignore all other arguments."
+  (denote-data-get-title file))
+
+(defvar denote-sequence-get-all-files-function--original nil)
+(defvar denote-sequence-get-path-function--original nil)
+(defvar denote-sequence-hierarchy-get-title-function--original nil)
+
+(defvar denote-data--sequence-enabled-p nil
+  "Non-nil when `denote-sequence' reads from `denote-data'.")
+
+(defun denote-data--sequence-enable ()
+  "Make `denote-sequence' read from `denote-data'.
+Do it only if `denote-data-mode' is on and `denote-sequence' defines the
+variables for it."
+  (when (and denote-data-mode
+             (not denote-data--sequence-enabled-p)
+             (boundp 'denote-sequence-get-all-files-function))
+    (setq denote-sequence-get-all-files-function--original denote-sequence-get-all-files-function)
+    (setq denote-sequence-get-path-function--original denote-sequence-get-path-function)
+    (setq denote-sequence-hierarchy-get-title-function--original denote-sequence-hierarchy-get-title-function)
+
+    (setq denote-sequence-get-all-files-function #'denote-data-sequence-get-all-files)
+    (setq denote-sequence-get-path-function #'denote-data-sequence-get-path)
+    (setq denote-sequence-hierarchy-get-title-function #'denote-data-sequence-get-title)
+    (setq denote-data--sequence-enabled-p t)))
+
+(defun denote-data--sequence-disable ()
+  "Undo `denote-data--sequence-enable'."
+  (when denote-data--sequence-enabled-p
+    (setq denote-sequence-get-all-files-function denote-sequence-get-all-files-function--original)
+    (setq denote-sequence-get-path-function denote-sequence-get-path-function--original)
+    (setq denote-sequence-hierarchy-get-title-function denote-sequence-hierarchy-get-title-function--original)
+    (setq denote-data--sequence-enabled-p nil)))
+
 (defvar denote-directory-files-get-function--original nil)
 (defvar denote-file-has-backlinks-function--original nil)
 (defvar denote-get-backlinks-as-files-function--original nil)
@@ -543,7 +615,10 @@ Also see `denote-data-get-backlinks-files-only'."
   (add-hook 'after-save-hook #'denote-data-update)
   (add-hook 'denote-new-note-functions #'denote-data-add-file)
   (add-hook 'denote-link-file-no-exist-functions #'denote-data-remove-file)
-  (add-hook 'denote-after-rename-functions #'denote-data-post-rename-update))
+  (add-hook 'denote-after-rename-functions #'denote-data-post-rename-update)
+
+  (with-eval-after-load 'denote-sequence
+    (denote-data--sequence-enable)))
 
 (defun denote-data-mode--disable ()
   "Undo changes made by `denote-data-mode'."
@@ -557,6 +632,7 @@ Also see `denote-data-get-backlinks-files-only'."
   (setq denote-get-title-function denote-get-title-function--original)
   (setq denote-infer-keywords-from-files-function denote-infer-keywords-from-files-function--original)
   (setq denote-retrieve-xref-alist-for-backlinks-function denote-retrieve-xref-alist-for-backlinks-function--original)
+  (denote-data--sequence-disable)
 
   (setq denote-data--write-all-called-p nil)
   (denote-data-clear)
