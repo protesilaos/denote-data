@@ -130,9 +130,8 @@ Do so by using the `denote-data--content-fns'."
 
 (defun denote-data--for-cache-p (file)
   "Return non-nil if FILE should be cached."
-  (and (file-exists-p file)
-        (denote-file-has-denoted-filename-p file)
-        (denote-file-is-in-denote-directory-p file)))
+  (and (denote-file-has-denoted-filename-p file)
+       (denote-file-is-in-denote-directory-p file)))
 
 (defun denote-data-write-entry (file)
   "Write data about FILE to `denote-data'."
@@ -236,22 +235,6 @@ Use this as part of `after-save-hook' or related.  Otherwise use
 `denote-data-write-entry'."
   (when (denote-data--for-cache-p buffer-file-name)
     (denote-data-write-entry buffer-file-name)))
-
-(defun denote-data-add-file (identifier signature title keywords note-path)
-  "Add file to `denote-data'.
-IDENTIFIER, SIGNATURE, TITLE, KEYWORDS, NOTE-PATH are those documented
-in `denote-new-note-functions'."
-  (when (denote-data--for-cache-p note-path)
-    (let* ((data (denote-data--get-contents note-path))
-           (links (alist-get 'links data))
-           (slots (list :identifier identifier
-                        :title title
-                        :signature signature
-                        :keywords (denote-keywords-combine keywords)
-                        :path note-path
-                        :links links))
-           (entry (apply 'denote-data-entry-create slots)))
-      (puthash identifier entry denote-data))))
 
 (defun denote-data-remove-file (file)
   "Remove FILE from `denote-data'.
@@ -620,7 +603,6 @@ variables for it."
     (setq denote-data--enabled-p t))
 
   (add-hook 'after-save-hook #'denote-data-update)
-  (add-hook 'denote-new-note-functions #'denote-data-add-file)
   (add-hook 'denote-link-file-no-exist-functions #'denote-data-remove-file)
   (add-hook 'denote-after-rename-functions #'denote-data-post-rename-update)
 
@@ -646,7 +628,6 @@ variables for it."
   (setq denote-data--write-all-called-p nil)
   (denote-data-clear)
   (remove-hook 'after-save-hook #'denote-data-update)
-  (remove-hook 'denote-new-note-functions #'denote-data-add-file)
   (remove-hook 'denote-link-file-no-exist-functions #'denote-data-remove-file)
   (remove-hook 'denote-after-rename-functions #'denote-data-post-rename-update))
 
